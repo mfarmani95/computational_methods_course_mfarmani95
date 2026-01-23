@@ -13,5 +13,4 @@ uv venv
 uv sync
 source ./.venv/bin/activate
 cd ..
-mkdir -p ./modflow
 python -m ipykernel install --user --name hwrs640
