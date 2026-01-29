@@ -121,6 +121,117 @@ In this problem, you will explore the performance differences between row-major 
 3. Measure and compare the execution time of both functions using the `time` module or `timeit` library. Make sure to repeat the measurements multiple times (at least 30) to get an average execution time.
 4. Compare the performance results to using built in NumPy functions for summing the array. Explain the differences in performance you observe, using concepts such as cache locality and memory access patterns.
 
+```python
+import numpy as np
+import time
+import statistics as stats
+
+# Reproducibility
+np.random.seed(42)
+
+# ⚠️ 10000x10000 float64 ~ 0.8 GB. If your laptop struggles, try 4000 or 6000 first.
+N = 10000
+Arr = np.random.random((N, N)).astype(np.float64)*1000
+
+def sum_row_major(arr: np.ndarray) -> float:
+    s = 0.0
+    nrows, ncols = arr.shape
+    for i in range(nrows):
+        row = arr[i]              # small optimization: get row view once
+        for j in range(ncols):
+            s += row[j]
+    return s
+
+def sum_col_major(arr: np.ndarray) -> float:
+    s = 0.0
+    nrows, ncols = arr.shape
+    for j in range(ncols):
+        for i in range(nrows):
+            s += arr[i, j]
+    return s
+
+def time_func(func, arr, repeats=30, warmup=1):
+    # warmup (optional) to reduce first-run effects
+    for _ in range(warmup):
+        func(arr)
+
+    times = []
+    for _ in range(repeats):
+        t0 = time.perf_counter()
+        out = func(arr)
+        t1 = time.perf_counter()
+        times.append(t1 - t0)
+    return out, times
+
+# --- Time the Python loops ---
+row_sum, row_times = time_func(sum_row_major, A, repeats=30)
+col_sum, col_times = time_func(sum_col_major, A, repeats=30)
+
+# --- Time NumPy built-in sum ---
+def numpy_sum(arr):
+    return arr.sum()
+
+np_sum, np_times = time_func(numpy_sum, A, repeats=30)
+
+# Verify sums are close (floating point order differs slightly)
+print("Check close:", np.isclose(row_sum, np_sum, rtol=1e-10, atol=1e-10),
+      np.isclose(col_sum, np_sum, rtol=1e-10, atol=1e-10))
+
+def summarize(name, times):
+    print(f"\n{name}")
+    print(f"  mean:   {stats.mean(times):.6f} s")
+    print(f"  median: {stats.median(times):.6f} s")
+    print(f"  std:    {stats.pstdev(times):.6f} s")
+    print(f"  min:    {min(times):.6f} s")
+    print(f"  max:    {max(times):.6f} s")
+
+summarize("Row-major Python loop", row_times)
+summarize("Column-major Python loop", col_times)
+summarize("NumPy arr.sum()", np_times)
+
+print("\nSpeedups:")
+print(f"  Column/Row: {stats.mean(col_times)/stats.mean(row_times):.2f}x slower")
+print(f"  Row/NumPy:  {stats.mean(row_times)/stats.mean(np_times):.2f}x slower than NumPy")
+print(f"  Col/NumPy:  {stats.mean(col_times)/stats.mean(np_times):.2f}x slower than NumPy")
+
+
+```
+
+
+## Row-major vs Column-major (Python Loops)
+
+NumPy arrays are **row-major (C-order)** by default, meaning that elements in the same row are stored **contiguously in memory**.
+
+### Row-major Access Pattern
+In the row-major loop (`i` outer, `j` inner), the array is accessed as:
+        arr[i, 0], arr[i, 1], arr[i, 2], ...
+
+This access pattern follows the contiguous memory layout of the array and therefore has **good cache locality**. As a result, CPU cache lines are used efficiently, leading to better performance.
+
+### Column-major Access Pattern
+In the column-major loop (`j` outer, `i` inner), the array is accessed as:
+        arr[0, j], arr[1, j], arr[2], ...
+
+This pattern jumps through memory with a stride equal to the number of columns (`ncols`). This causes **poor spatial locality**, resulting in more cache misses and slower execution.
+
+As a result, the column-major loop is typically **significantly slower** (often multiple times slower) than the row-major loop, even though both perform the same number of arithmetic operations.
+
+---
+
+## NumPy Built-in Sum vs Python Loops
+
+The built-in NumPy function `arr.sum()` is much faster than either Python loop implementation for several reasons:
+
+- It is implemented in **compiled C code**, avoiding Python-level loop overhead.
+- It uses **highly optimized inner loops**, including vectorization (SIMD) and efficient memory access.
+- It minimizes Python interpreter overhead, which dominates runtime in explicit Python loops.
+
+### Performance Summary
+- `arr.sum()` is typically **tens to hundreds of times faster** than Python loops.
+- The row-major Python loop is faster than the column-major loop.
+- Both Python loop implementations are significantly slower than the NumPy built-in approach.
+
+
 ## Problem 4: Scaling and parallel computing (25 points)
 
 In this problem, you will use Dask arrays to compute the element-wise standard score (z-score normalization) of a large random array and measure the scaling behavior across 1-4 CPU cores. The z-score is computed as: z = (x - μ) / σ, where μ is the mean and σ is the standard deviation.
