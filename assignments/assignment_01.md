@@ -129,7 +129,7 @@ import statistics as stats
 # Reproducibility
 np.random.seed(42)
 
-# ⚠️ 10000x10000 float64 ~ 0.8 GB. If your laptop struggles, try 4000 or 6000 first.
+
 N = 10000
 Arr = np.random.random((N, N)).astype(np.float64)*1000
 
@@ -194,7 +194,6 @@ print(f"  Column/Row: {stats.mean(col_times)/stats.mean(row_times):.2f}x slower"
 print(f"  Row/NumPy:  {stats.mean(row_times)/stats.mean(np_times):.2f}x slower than NumPy")
 print(f"  Col/NumPy:  {stats.mean(col_times)/stats.mean(np_times):.2f}x slower than NumPy")
 
-
 ```
 
 
@@ -244,3 +243,132 @@ Perform the following tasks:
 4. Discuss your results: Does your implementation achieve good scaling? What factors limit the speedup?
 
 **Hint**: Configure the number of workers using `dask.config.set(num_workers=n)` and use `.compute()` to trigger computation.
+
+
+```python
+import time
+import numpy as np
+import dask.array as da
+import dask
+from dask.diagnostics import ProgressBar
+import matplotlib.pyplot as plt
+
+def zscore_dask(n, chunks=(2000, 2000), seed=42):
+    """
+    Create a random Dask array and compute z-score normalization.
+    Returns a Dask array (lazy); call .compute() to execute.
+    """
+    rs = da.random.RandomState(seed)
+    x = rs.random((n, n), chunks=chunks)  # uniform(0,1)
+    mu = x.mean()
+    sigma = x.std()
+    z = (x - mu) / sigma
+    return z
+
+def time_zscore_run(n, num_workers, chunks=(2000, 2000), repeats=3):
+    times = []
+    for _ in range(repeats):
+        z = zscore_dask(n, chunks=chunks)
+        with dask.config.set(scheduler="threads", num_workers=num_workers):
+            t0 = time.perf_counter()
+            with ProgressBar():
+                _ = z.compute()
+            t1 = time.perf_counter()
+        times.append(t1 - t0)
+    return float(np.mean(times))
+```
+```python
+# Strong scaling settings
+N_fixed = 12000   
+chunks = (2000, 2000)
+workers_list = [1, 2, 3, 4]
+
+T = []
+for p in workers_list:
+    t = time_zscore_run(N_fixed, num_workers=p, chunks=chunks, repeats=3)
+    T.append(t)
+
+T1 = T[0]
+S = [T1 / tp for tp in T]
+E = [sp / p for sp, p in zip(S, workers_list)]
+
+
+
+print("Strong Scaling Results (fixed N):")
+for p, tp, sp, ep in zip(workers_list, T, S, E):
+    print(f"  p={p}: T={tp:.3f}s, S={sp:.2f}, E={ep:.2f}")
+```
+
+
+```python
+# Plot: execution time vs workers
+plt.figure()
+plt.plot(workers_list, T, marker="o")
+plt.xlabel("Number of cores / workers (p)")
+plt.ylabel("Execution time T(p) [s]")
+plt.title("Strong Scaling: Execution Time vs Cores")
+plt.grid(True)
+plt.show()
+
+# (Optional) Plot speedup
+plt.figure()
+plt.plot(workers_list, S, marker="o")
+plt.xlabel("Number of cores / workers (p)")
+plt.ylabel("Speedup S(p)")
+plt.title("Strong Scaling: Speedup")
+plt.grid(True)
+plt.show()
+```
+
+
+
+```python
+N1 = 12000  
+chunks = (2000, 2000)
+
+T_weak = []
+N_list = []
+for p in workers_list:
+    Np = int(N1 * np.sqrt(p))
+    N_list.append(Np)
+    t = time_zscore_run(Np, num_workers=p, chunks=chunks, repeats=3)
+    T_weak.append(t)
+
+print("\nWeak Scaling Results (N grows with sqrt(p)):")
+for p, Np, tp in zip(workers_list, N_list, T_weak):
+    print(f"  p={p}: N={Np}, T={tp:.3f}s")
+```
+```python
+# Plot: execution time vs workers (weak scaling)
+plt.figure()
+plt.plot(workers_list, T_weak, marker="o")
+plt.xlabel("Number of cores / workers (p)")
+plt.ylabel("Execution time [s]")
+plt.title("Weak Scaling: Execution Time vs Cores (Work per core ~ constant)")
+plt.grid(True)
+plt.show()
+```
+
+
+
+
+### Strong Scaling
+
+In an ideal case, doubling the number of cores would nearly halve the runtime (linear speedup). In practice, speedup usually becomes **sub-linear** due to several factors:
+
+- **Dask scheduling overhead** increases with the number of tasks, especially when chunk sizes are small.
+- **Mean and standard deviation are reduction operations**, which require combining results across chunks and introduce synchronization and communication overhead.
+- **Memory bandwidth limitations**: z-score normalization involves reading the array, computing reductions, and writing the normalized output. This workflow is often limited by memory throughput rather than raw CPU performance.
+- **Chunk size tradeoff**: small chunks increase parallelism but create many tasks and higher scheduling overhead, while very large chunks reduce overhead but limit parallelism and increase memory pressure.
+
+---
+
+### Weak Scaling
+
+Ideally, execution time should remain approximately constant as both the number of workers and the problem size increase proportionally. In practice, execution time often increases due to:
+
+- **Reduction steps (mean and standard deviation)** that must aggregate results across an increasing number of chunks as the array grows.
+- **Increased memory traffic**, which can saturate memory bandwidth.
+- **Higher scheduling and coordination overhead** when combining partial results from larger task graphs.
+
+---

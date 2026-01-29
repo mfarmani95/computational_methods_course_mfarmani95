@@ -132,9 +132,59 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LinearRegression</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">'computational_methods_course/data/moores.csv'</span>)</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(df.head(<span class="dv">5</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> random</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>random.seed(<span class="dv">42</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_csv(<span class="st">'./../data/moores.csv'</span>,header<span class="op">=</span><span class="dv">1</span>,)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>df[<span class="st">'Transistor Count'</span>] <span class="op">=</span> pd.to_numeric(df[<span class="st">'Transistor Count'</span>].astype(<span class="bu">str</span>).<span class="bu">str</span>.replace(<span class="st">','</span>, <span class="st">''</span>), errors<span class="op">=</span><span class="st">'coerce'</span>)</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Drop any rows that became NaN or are 0 (you can't take the log of 0)</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df.dropna(subset<span class="op">=</span>[<span class="st">'Transistor Count'</span>])</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df[df[<span class="st">'Transistor Count'</span>] <span class="op">&gt;</span> <span class="dv">0</span>]</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Now try the log transform again</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>y <span class="op">=</span> df[<span class="st">'Transistor Count'</span>].values</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>y_log <span class="op">=</span> np.log(y)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Update X as well to match the cleaned rows</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> df[[<span class="st">'Year'</span>]].values</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LinearRegression()</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>model.fit(X, y_log)</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>y_pred_log <span class="op">=</span> model.predict(X)</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>plt.scatter(X, y_log, alpha<span class="op">=</span><span class="fl">0.5</span>, label<span class="op">=</span><span class="st">'Actual Data (Log Scale)'</span>)</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>plt.plot(X, y_pred_log, color<span class="op">=</span><span class="st">'red'</span>, linewidth<span class="op">=</span><span class="dv">2</span>, label<span class="op">=</span><span class="st">'Linear Regression Fit'</span>)</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Linear Regression on Log-Transformed Data"</span>)</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">'Year'</span>)</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">'Log(Transistor Count)'</span>)</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>, linestyle<span class="op">=</span><span class="st">'--'</span>, alpha<span class="op">=</span><span class="fl">0.7</span>)</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>r <span class="op">=</span> model.coef_[<span class="dv">0</span>]</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>doubling_time <span class="op">=</span> np.log(<span class="dv">2</span>) <span class="op">/</span> r</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Model Doubling Time: </span><span class="sc">{</span>doubling_time<span class="sc">:.2f}</span><span class="ss"> years"</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Difference from 2-year cited value: </span><span class="sc">{</span><span class="bu">abs</span>(<span class="dv">2</span> <span class="op">-</span> doubling_time)<span class="sc">:.2f}</span><span class="ss"> years"</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_doubling_time(data):</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    X_sub <span class="op">=</span> data[[<span class="st">'Year'</span>]].values</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    y_log_sub <span class="op">=</span> np.log2(data[<span class="st">'Transistor Count'</span>].values)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    m <span class="op">=</span> LinearRegression().fit(X_sub, y_log_sub)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.log(<span class="dv">2</span>) <span class="op">/</span> m.coef_[<span class="dv">0</span>]</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Sort by year first to ensure head/tail picks the right eras</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>df_sorted <span class="op">=</span> df.sort_values(<span class="st">'Year'</span>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>early_10 <span class="op">=</span> df_sorted.head(<span class="dv">10</span>)</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>late_10 <span class="op">=</span> df_sorted.tail(<span class="dv">10</span>)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Early Era Doubling Time: </span><span class="sc">{</span>get_doubling_time(early_10)<span class="sc">:.2f}</span><span class="ss"> years"</span>)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Late Era Doubling Time: </span><span class="sc">{</span>get_doubling_time(late_10)<span class="sc">:.2f}</span><span class="ss"> years"</span>)</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="problem-3-row-vs-column-order-data-access-25-points" class="level2">
 <h2 class="anchored" data-anchor-id="problem-3-row-vs-column-order-data-access-25-points">Problem 3: Row vs column order data access (25 points)</h2>
@@ -149,6 +199,110 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Measure and compare the execution time of both functions using the <code>time</code> module or <code>timeit</code> library. Make sure to repeat the measurements multiple times (at least 30) to get an average execution time.</li>
 <li>Compare the performance results to using built in NumPy functions for summing the array. Explain the differences in performance you observe, using concepts such as cache locality and memory access patterns.</li>
 </ol>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> statistics <span class="im">as</span> stats</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Reproducibility</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">42</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>N <span class="op">=</span> <span class="dv">10000</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>Arr <span class="op">=</span> np.random.random((N, N)).astype(np.float64)<span class="op">*</span><span class="dv">1000</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sum_row_major(arr: np.ndarray) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    s <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    nrows, ncols <span class="op">=</span> arr.shape</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(nrows):</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>        row <span class="op">=</span> arr[i]              <span class="co"># small optimization: get row view once</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(ncols):</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            s <span class="op">+=</span> row[j]</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> s</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> sum_col_major(arr: np.ndarray) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    s <span class="op">=</span> <span class="fl">0.0</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    nrows, ncols <span class="op">=</span> arr.shape</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> j <span class="kw">in</span> <span class="bu">range</span>(ncols):</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(nrows):</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>            s <span class="op">+=</span> arr[i, j]</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> s</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> time_func(func, arr, repeats<span class="op">=</span><span class="dv">30</span>, warmup<span class="op">=</span><span class="dv">1</span>):</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>    <span class="co"># warmup (optional) to reduce first-run effects</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(warmup):</span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>        func(arr)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>    times <span class="op">=</span> []</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(repeats):</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>        t0 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>        out <span class="op">=</span> func(arr)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>        t1 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>        times.append(t1 <span class="op">-</span> t0)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> out, times</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Time the Python loops ---</span></span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>row_sum, row_times <span class="op">=</span> time_func(sum_row_major, A, repeats<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>col_sum, col_times <span class="op">=</span> time_func(sum_col_major, A, repeats<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Time NumPy built-in sum ---</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> numpy_sum(arr):</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> arr.<span class="bu">sum</span>()</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a>np_sum, np_times <span class="op">=</span> time_func(numpy_sum, A, repeats<span class="op">=</span><span class="dv">30</span>)</span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Verify sums are close (floating point order differs slightly)</span></span>
+<span id="cb3-53"><a href="#cb3-53" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Check close:"</span>, np.isclose(row_sum, np_sum, rtol<span class="op">=</span><span class="fl">1e-10</span>, atol<span class="op">=</span><span class="fl">1e-10</span>),</span>
+<span id="cb3-54"><a href="#cb3-54" aria-hidden="true" tabindex="-1"></a>      np.isclose(col_sum, np_sum, rtol<span class="op">=</span><span class="fl">1e-10</span>, atol<span class="op">=</span><span class="fl">1e-10</span>))</span>
+<span id="cb3-55"><a href="#cb3-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-56"><a href="#cb3-56" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> summarize(name, times):</span>
+<span id="cb3-57"><a href="#cb3-57" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="sc">{</span>name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb3-58"><a href="#cb3-58" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  mean:   </span><span class="sc">{</span>stats<span class="sc">.</span>mean(times)<span class="sc">:.6f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-59"><a href="#cb3-59" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  median: </span><span class="sc">{</span>stats<span class="sc">.</span>median(times)<span class="sc">:.6f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-60"><a href="#cb3-60" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  std:    </span><span class="sc">{</span>stats<span class="sc">.</span>pstdev(times)<span class="sc">:.6f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-61"><a href="#cb3-61" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  min:    </span><span class="sc">{</span><span class="bu">min</span>(times)<span class="sc">:.6f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-62"><a href="#cb3-62" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  max:    </span><span class="sc">{</span><span class="bu">max</span>(times)<span class="sc">:.6f}</span><span class="ss"> s"</span>)</span>
+<span id="cb3-63"><a href="#cb3-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-64"><a href="#cb3-64" aria-hidden="true" tabindex="-1"></a>summarize(<span class="st">"Row-major Python loop"</span>, row_times)</span>
+<span id="cb3-65"><a href="#cb3-65" aria-hidden="true" tabindex="-1"></a>summarize(<span class="st">"Column-major Python loop"</span>, col_times)</span>
+<span id="cb3-66"><a href="#cb3-66" aria-hidden="true" tabindex="-1"></a>summarize(<span class="st">"NumPy arr.sum()"</span>, np_times)</span>
+<span id="cb3-67"><a href="#cb3-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-68"><a href="#cb3-68" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Speedups:"</span>)</span>
+<span id="cb3-69"><a href="#cb3-69" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Column/Row: </span><span class="sc">{</span>stats<span class="sc">.</span>mean(col_times)<span class="op">/</span>stats<span class="sc">.</span>mean(row_times)<span class="sc">:.2f}</span><span class="ss">x slower"</span>)</span>
+<span id="cb3-70"><a href="#cb3-70" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Row/NumPy:  </span><span class="sc">{</span>stats<span class="sc">.</span>mean(row_times)<span class="op">/</span>stats<span class="sc">.</span>mean(np_times)<span class="sc">:.2f}</span><span class="ss">x slower than NumPy"</span>)</span>
+<span id="cb3-71"><a href="#cb3-71" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"  Col/NumPy:  </span><span class="sc">{</span>stats<span class="sc">.</span>mean(col_times)<span class="op">/</span>stats<span class="sc">.</span>mean(np_times)<span class="sc">:.2f}</span><span class="ss">x slower than NumPy"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="row-major-vs-column-major-python-loops" class="level2">
+<h2 class="anchored" data-anchor-id="row-major-vs-column-major-python-loops">Row-major vs Column-major (Python Loops)</h2>
+<p>NumPy arrays are <strong>row-major (C-order)</strong> by default, meaning that elements in the same row are stored <strong>contiguously in memory</strong>.</p>
+<section id="row-major-access-pattern" class="level3">
+<h3 class="anchored" data-anchor-id="row-major-access-pattern">Row-major Access Pattern</h3>
+<p>In the row-major loop (<code>i</code> outer, <code>j</code> inner), the array is accessed as: arr[i, 0], arr[i, 1], arr[i, 2], …</p>
+<p>This access pattern follows the contiguous memory layout of the array and therefore has <strong>good cache locality</strong>. As a result, CPU cache lines are used efficiently, leading to better performance.</p>
+</section>
+<section id="column-major-access-pattern" class="level3">
+<h3 class="anchored" data-anchor-id="column-major-access-pattern">Column-major Access Pattern</h3>
+<p>In the column-major loop (<code>j</code> outer, <code>i</code> inner), the array is accessed as: arr[0, j], arr[1, j], arr[2], …</p>
+<p>This pattern jumps through memory with a stride equal to the number of columns (<code>ncols</code>). This causes <strong>poor spatial locality</strong>, resulting in more cache misses and slower execution.</p>
+<p>As a result, the column-major loop is typically <strong>significantly slower</strong> (often multiple times slower) than the row-major loop, even though both perform the same number of arithmetic operations.</p>
+<hr>
+</section>
+</section>
+<section id="numpy-built-in-sum-vs-python-loops" class="level2">
+<h2 class="anchored" data-anchor-id="numpy-built-in-sum-vs-python-loops">NumPy Built-in Sum vs Python Loops</h2>
+<p>The built-in NumPy function <code>arr.sum()</code> is much faster than either Python loop implementation for several reasons:</p>
+<ul>
+<li>It is implemented in <strong>compiled C code</strong>, avoiding Python-level loop overhead.</li>
+<li>It uses <strong>highly optimized inner loops</strong>, including vectorization (SIMD) and efficient memory access.</li>
+<li>It minimizes Python interpreter overhead, which dominates runtime in explicit Python loops.</li>
+</ul>
+<section id="performance-summary" class="level3">
+<h3 class="anchored" data-anchor-id="performance-summary">Performance Summary</h3>
+<ul>
+<li><code>arr.sum()</code> is typically <strong>tens to hundreds of times faster</strong> than Python loops.</li>
+<li>The row-major Python loop is faster than the column-major loop.</li>
+<li>Both Python loop implementations are significantly slower than the NumPy built-in approach.</li>
+</ul>
+</section>
 </section>
 <section id="problem-4-scaling-and-parallel-computing-25-points" class="level2">
 <h2 class="anchored" data-anchor-id="problem-4-scaling-and-parallel-computing-25-points">Problem 4: Scaling and parallel computing (25 points)</h2>
@@ -161,6 +315,115 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <li>Discuss your results: Does your implementation achieve good scaling? What factors limit the speedup?</li>
 </ol>
 <p><strong>Hint</strong>: Configure the number of workers using <code>dask.config.set(num_workers=n)</code> and use <code>.compute()</code> to trigger computation.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> time</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> dask.array <span class="im">as</span> da</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> dask</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask.diagnostics <span class="im">import</span> ProgressBar</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> zscore_dask(n, chunks<span class="op">=</span>(<span class="dv">2000</span>, <span class="dv">2000</span>), seed<span class="op">=</span><span class="dv">42</span>):</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">    Create a random Dask array and compute z-score normalization.</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns a Dask array (lazy); call .compute() to execute.</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>    rs <span class="op">=</span> da.random.RandomState(seed)</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> rs.random((n, n), chunks<span class="op">=</span>chunks)  <span class="co"># uniform(0,1)</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>    mu <span class="op">=</span> x.mean()</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>    sigma <span class="op">=</span> x.std()</span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>    z <span class="op">=</span> (x <span class="op">-</span> mu) <span class="op">/</span> sigma</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> z</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> time_zscore_run(n, num_workers, chunks<span class="op">=</span>(<span class="dv">2000</span>, <span class="dv">2000</span>), repeats<span class="op">=</span><span class="dv">3</span>):</span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>    times <span class="op">=</span> []</span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> _ <span class="kw">in</span> <span class="bu">range</span>(repeats):</span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>        z <span class="op">=</span> zscore_dask(n, chunks<span class="op">=</span>chunks)</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> dask.config.<span class="bu">set</span>(scheduler<span class="op">=</span><span class="st">"threads"</span>, num_workers<span class="op">=</span>num_workers):</span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>            t0 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>            <span class="cf">with</span> ProgressBar():</span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>                _ <span class="op">=</span> z.compute()</span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>            t1 <span class="op">=</span> time.perf_counter()</span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>        times.append(t1 <span class="op">-</span> t0)</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">float</span>(np.mean(times))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Strong scaling settings</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>N_fixed <span class="op">=</span> <span class="dv">12000</span>   </span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>chunks <span class="op">=</span> (<span class="dv">2000</span>, <span class="dv">2000</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>workers_list <span class="op">=</span> [<span class="dv">1</span>, <span class="dv">2</span>, <span class="dv">3</span>, <span class="dv">4</span>]</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>T <span class="op">=</span> []</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p <span class="kw">in</span> workers_list:</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> time_zscore_run(N_fixed, num_workers<span class="op">=</span>p, chunks<span class="op">=</span>chunks, repeats<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    T.append(t)</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>T1 <span class="op">=</span> T[<span class="dv">0</span>]</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>S <span class="op">=</span> [T1 <span class="op">/</span> tp <span class="cf">for</span> tp <span class="kw">in</span> T]</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>E <span class="op">=</span> [sp <span class="op">/</span> p <span class="cf">for</span> sp, p <span class="kw">in</span> <span class="bu">zip</span>(S, workers_list)]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Strong Scaling Results (fixed N):"</span>)</span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p, tp, sp, ep <span class="kw">in</span> <span class="bu">zip</span>(workers_list, T, S, E):</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  p=</span><span class="sc">{</span>p<span class="sc">}</span><span class="ss">: T=</span><span class="sc">{</span>tp<span class="sc">:.3f}</span><span class="ss">s, S=</span><span class="sc">{</span>sp<span class="sc">:.2f}</span><span class="ss">, E=</span><span class="sc">{</span>ep<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot: execution time vs workers</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>plt.figure()</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>plt.plot(workers_list, T, marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Number of cores / workers (p)"</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Execution time T(p) [s]"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Strong Scaling: Execution Time vs Cores"</span>)</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co"># (Optional) Plot speedup</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>plt.figure()</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>plt.plot(workers_list, S, marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Number of cores / workers (p)"</span>)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Speedup S(p)"</span>)</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Strong Scaling: Speedup"</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>N1 <span class="op">=</span> <span class="dv">12000</span>  </span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>chunks <span class="op">=</span> (<span class="dv">2000</span>, <span class="dv">2000</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>T_weak <span class="op">=</span> []</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>N_list <span class="op">=</span> []</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p <span class="kw">in</span> workers_list:</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    Np <span class="op">=</span> <span class="bu">int</span>(N1 <span class="op">*</span> np.sqrt(p))</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    N_list.append(Np)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    t <span class="op">=</span> time_zscore_run(Np, num_workers<span class="op">=</span>p, chunks<span class="op">=</span>chunks, repeats<span class="op">=</span><span class="dv">3</span>)</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    T_weak.append(t)</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">Weak Scaling Results (N grows with sqrt(p)):"</span>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> p, Np, tp <span class="kw">in</span> <span class="bu">zip</span>(workers_list, N_list, T_weak):</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  p=</span><span class="sc">{</span>p<span class="sc">}</span><span class="ss">: N=</span><span class="sc">{</span>Np<span class="sc">}</span><span class="ss">, T=</span><span class="sc">{</span>tp<span class="sc">:.3f}</span><span class="ss">s"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot: execution time vs workers (weak scaling)</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>plt.figure()</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>plt.plot(workers_list, T_weak, marker<span class="op">=</span><span class="st">"o"</span>)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Number of cores / workers (p)"</span>)</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Execution time [s]"</span>)</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Weak Scaling: Execution Time vs Cores (Work per core ~ constant)"</span>)</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="strong-scaling" class="level3">
+<h3 class="anchored" data-anchor-id="strong-scaling">Strong Scaling</h3>
+<p>In an ideal case, doubling the number of cores would nearly halve the runtime (linear speedup). In practice, speedup usually becomes <strong>sub-linear</strong> due to several factors:</p>
+<ul>
+<li><strong>Dask scheduling overhead</strong> increases with the number of tasks, especially when chunk sizes are small.</li>
+<li><strong>Mean and standard deviation are reduction operations</strong>, which require combining results across chunks and introduce synchronization and communication overhead.</li>
+<li><strong>Memory bandwidth limitations</strong>: z-score normalization involves reading the array, computing reductions, and writing the normalized output. This workflow is often limited by memory throughput rather than raw CPU performance.</li>
+<li><strong>Chunk size tradeoff</strong>: small chunks increase parallelism but create many tasks and higher scheduling overhead, while very large chunks reduce overhead but limit parallelism and increase memory pressure.</li>
+</ul>
+<hr>
+</section>
+<section id="weak-scaling" class="level3">
+<h3 class="anchored" data-anchor-id="weak-scaling">Weak Scaling</h3>
+<p>Ideally, execution time should remain approximately constant as both the number of workers and the problem size increase proportionally. In practice, execution time often increases due to:</p>
+<ul>
+<li><strong>Reduction steps (mean and standard deviation)</strong> that must aggregate results across an increasing number of chunks as the array grows.</li>
+<li><strong>Increased memory traffic</strong>, which can saturate memory bandwidth.</li>
+<li><strong>Higher scheduling and coordination overhead</strong> when combining partial results from larger task graphs.</li>
+</ul>
+<hr>
+</section>
 </section>
 </section>
 
