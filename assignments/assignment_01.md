@@ -52,12 +52,65 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
 import numpy as np
+import random
+random.seed(42)
 
-df = pd.read_csv('computational_methods_course/data/moores.csv')
-print(df.head(5))
+df = pd.read_csv('./../data/moores.csv',header=1,)
+
+df['Transistor Count'] = pd.to_numeric(df['Transistor Count'].astype(str).str.replace(',', ''), errors='coerce')
+
+# 2. Drop any rows that became NaN or are 0 (you can't take the log of 0)
+df = df.dropna(subset=['Transistor Count'])
+df = df[df['Transistor Count'] > 0]
+
+# 3. Now try the log transform again
+y = df['Transistor Count'].values
+y_log = np.log(y)
+
+# 4. Update X as well to match the cleaned rows
+X = df[['Year']].values
+
+model = LinearRegression()
+model.fit(X, y_log)
+y_pred_log = model.predict(X)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X, y_log, alpha=0.5, label='Actual Data (Log Scale)')
+plt.plot(X, y_pred_log, color='red', linewidth=2, label='Linear Regression Fit')
+plt.title("Linear Regression on Log-Transformed Data")
+plt.xlabel('Year')
+plt.ylabel('Log(Transistor Count)')
+plt.legend()
+plt.grid(True, linestyle='--', alpha=0.7)
+plt.show()
+
 ```
 
+```python
+r = model.coef_[0]
+doubling_time = np.log(2) / r
 
+print(f"Model Doubling Time: {doubling_time:.2f} years")
+print(f"Difference from 2-year cited value: {abs(2 - doubling_time):.2f} years")
+
+def get_doubling_time(data):
+    X_sub = data[['Year']].values
+    y_log_sub = np.log2(data['Transistor Count'].values)
+    m = LinearRegression().fit(X_sub, y_log_sub)
+    return np.log(2) / m.coef_[0]
+
+# Sort by year first to ensure head/tail picks the right eras
+df_sorted = df.sort_values('Year')
+
+early_10 = df_sorted.head(10)
+late_10 = df_sorted.tail(10)
+
+print(f"Early Era Doubling Time: {get_doubling_time(early_10):.2f} years")
+print(f"Late Era Doubling Time: {get_doubling_time(late_10):.2f} years")
+
+
+
+```
 ## Problem 3: Row vs column order data access (25 points)
 In this problem, you will explore the performance differences between row-major and column-major data access patterns using NumPy arrays. Perform the following tasks:
 
