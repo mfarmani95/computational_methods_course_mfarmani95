@@ -32,6 +32,9 @@ Additional learning resources and reference materials for the course.
 
 ## Recommended Textbooks
 
-- []()
+- [Python Data Science Handbook](https://jakevdp.github.io/PythonDataScienceHandbook/): A practical guide to data science using Python.
+- [The Elements of Statistical Learning](https://hastie.su.domains/ElemStatLearn/): A comprehensive resource on statistical learning techniques.
+- [Data Driven Science and Engineering](https://faculty.washington.edu/sbrunton/DataBookV2.pdf): Modern methods for data-driven modeling and analysis, a strong complement to course topics.
+- [Regression and Other Stories](https://users.aalto.fi/~ave/ROS.pdf): An accessible introduction to regression analysis and its applications.
 
 Additional reading materials and textbooks will be recommended throughout the course.

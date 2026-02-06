@@ -4,7 +4,7 @@ This repository hosts course materials for a course on computational methods for
 
 ## 📚 Course Website
 
-Visit the course website: [https://BennettHydroLab.github.io/computational_methods_course/](https://BennettHydroLab.github.io/computational_methods_course/)
+Visit the course website: [https://hwrs640.github.io/computational_methods_course/](https://hwrs640.github.io/computational_methods_course/)
 
 ## 📖 Course Structure
 
@@ -22,13 +22,56 @@ The course materials are organized into the following sections:
 
 The easiest way to access the course materials is through the published JupyterBook website linked above.
 
-### Local Development
+### Running the Notebooks
 
-To build the JupyterBook locally:
+If you want to run the notebooks and work with the code interactively, there are two options:
+
+#### Option 1: GitHub Codespaces (Recommended)
+
+The easiest way to get a fully configured environment is through GitHub Codespaces. This gives you a cloud-based VS Code editor with all dependencies pre-installed.
+
+1. Navigate to the [repository on GitHub](https://github.com/hwrs640/computational_methods_course)
+2. Click the green **Code** button, then select the **Codespaces** tab
+3. Click **Create codespace on main**
+
+The environment will automatically set up a Python virtual environment, install all dependencies, and register the `Python (HWRS640)` Jupyter kernel. Once the setup completes, open any notebook in the `notebooks/` directory and select the `Python (HWRS640)` kernel to get started.
+
+#### Option 2: Local Setup
+
+To run the notebooks on your own machine you will need Python 3.13+ and [uv](https://docs.astral.sh/uv/) installed.
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/BennettHydroLab/computational_methods_course.git
+   git clone https://github.com/hwrs640/computational_methods_course.git
+   cd computational_methods_course
+   ```
+
+2. Create the virtual environment and install dependencies:
+   ```bash
+   uv venv
+   uv sync
+   ```
+
+3. Activate the environment and register the Jupyter kernel:
+   ```bash
+   source .venv/bin/activate
+   python -m ipykernel install --user --name hwrs640 --display-name "Python (HWRS640)"
+   ```
+
+4. Launch JupyterLab:
+   ```bash
+   jupyter lab
+   ```
+
+Open any notebook in the `notebooks/` directory and select the `Python (HWRS640)` kernel.
+
+### Building the JupyterBook
+
+To build the course website locally:
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/hwrs640/computational_methods_course.git
    cd computational_methods_course
    ```
 
