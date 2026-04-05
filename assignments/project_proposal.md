@@ -30,77 +30,131 @@ Your pitch should address the following four points. Use these as section headin
 
 ### 1. Motivation and scientific question
 
-   Rainfall–runoff models attempt to represent how precipitation and other climate drivers generate streamflow in river basins. Recent machine learning approaches can achieve high predictive skill but often lack physical interpretability, while traditional hydrologic models rely on parameters that are difficult to estimate for ungauged basins. Hybrid approaches that combine physical models with data-driven parameter estimation offer a promising path forward.
+   Physically based land surface models such as Noah-MP simulate water and energy fluxes using process-based representations of soil, vegetation, and snow. While these models are physically interpretable, their performance is often limited by uncertain parameterizations and the difficulty of calibrating them across spatially distributed domains.
 
-   This project explores whether graph neural networks (GNNs) can regionalize physically interpretable hydrologic model parameters across many catchments. Specifically, the scientific question is:
-   Can a graph neural network learn relationships between catchment characteristics and hydrologic model parameters such that a physically based rainfall–runoff model can be applied to previously unseen basins?
-   Answering this question could improve prediction in ungauged basins while maintaining interpretable hydrologic processes.
+Recent advances in differentiable modeling and graph neural networks (GNNs) offer a promising framework to bridge physical modeling and data-driven learning. By embedding physical models within a learnable system, it becomes possible to optimize model behavior directly against observations while preserving physical consistency. 
+
+This project explores the following scientific question:
+   Can a differentiable implementation of Noah-MP, coupled with a graph neural network routing model informed by topography, improve   streamflow prediction by learning spatially distributed hydrologic behavior across river networks? 
+
+The goal is to develop an end-to-end system that combines physical simulation with data-driven routing to better represent basin-scale hydrologic processes.
 
 ### 2. Dataset
 
-Describe the data you plan to use:
+The study will focus on the Salt and Verde River basins in Arizona, using high-resolution meteorological, land surface, and hydrologic datasets spanning 1980–2020:
 
-- What it is (variable(s), domain, temporal/spatial resolution)
-- Where it comes from (source, how you will access it)
-- Any known challenges (missing data, large file sizes, preprocessing needed)
-   The analysis will use the CAMELS-US (Catchment Attributes and Meteorology for Large-sample Studies) dataset, which contains hydrologic and meteorological data for hundreds of catchments across the continental United States.
-   The dataset includes:
-  •    Daily meteorological forcing: precipitation, temperature, and potential evapotranspiration
-  •    Observed streamflow: daily discharge records from USGS gauges
-  •    Catchment attributes: topography, climate statistics, soil properties, vegetation cover, and geology
-  •    Spatial coverage: ~500 catchments across diverse hydroclimatic regions in the U.S.
-  •    Temporal resolution: daily data spanning multiple decades
-   The dataset is publicly available and can be accessed through the CAMELS data repository. Preprocessing will involve aligning meteorological forcing with streamflow records and normalizing catchment attributes.
-   One challenge is the large number of basins and long time series, which can make training computationally intensive. To address this, catchments will be split into training, validation, and test sets (e.g., 300/100/100 basins).
+The datasets include:
+	•	Meteorological forcing (AORC)
+	•	Hourly precipitation, temperature, radiation, and other atmospheric variables
+	•	Spatial resolution: ~1 km
+	•	Source: NOAA AORC dataset
+	•	Static land surface data
+	•	Land cover / land mask from MODIS
+	•	Vegetation type and properties
+	•	Soil type and hydraulic properties from USGS datasets
+	•	Topographic information (DEM) for routing and flow direction from SRTM
+	•	Hydrologic observations (USGS)
+	•	Streamflow (discharge) at selected gauges within the Salt–Verde basin
+	•	Used as the target variable for model training and evaluation
+
+#### Key challenges include:
+	•	Large spatiotemporal data volume (hourly, multi-decade)
+	•	Alignment of forcing, static inputs, and observations
+	•	Efficient preprocessing and storage (NetCDF/xarray workflows)
+	•	Ensuring that the translation of Noah-MP from Fortran to PyTorch preserves the underlying physical processes while remaining numerically consistent
+	•	Maintaining GPU compatibility and computational efficiency in the PyTorch implementation, given the model’s complexity and multiple interacting processes
+	•	Managing GPU memory usage to prevent excessive memory consumption during training and simulation
+  
 
 ### 3. Proposed method
 
-Describe the computational approach you plan to apply:
+This project applies deep learning and differentiable modeling, focusing on integrating a physically based land surface model with a graph-based routing framework in an end-to-end learning system.
 
-- Which method(s) from the course will you use, and why are they appropriate for this problem?
-- What will the inputs and outputs of your model or analysis be?
-- If you are using deep learning, describe the architecture you have in mind (even if preliminary).
+⸻
 
+#### (1) Differentiable Noah-MP (PyTorch)
 
+The first step is to translate Noah-MP from Fortran into PyTorch, enabling automatic differentiation and GPU acceleration. This implementation will preserve the physical structure of the model, including conservation of mass and energy, while allowing gradients to propagate through model states and fluxes.
 
-   This project will apply deep learning and hybrid/differentiable modeling, two of the computational approaches discussed in this course.
-   The proposed workflow consists of two components:
-   Graph Neural Network (GNN)
-   Each catchment will be represented as a node in a graph, where node features consist of static catchment attributes (e.g., area, slope, soil properties, climate statistics). Edges between nodes will represent hydrologic similarity between catchments based on attribute distance.
-   The GNN will learn a mapping from catchment attributes to hydrologic model parameters
+The model simulates grid-scale hydrologic processes, including:
+	•	Soil moisture dynamics across multiple layers
+	•	Snow accumulation and melt (snow water equivalent, SWE)
+	•	Surface runoff (infiltration excess and saturation excess)
+	•	Subsurface drainage and baseflow
+	•	Energy balance components affecting evapotranspiration
 
+Inputs:
+	•	AORC meteorological forcing (precipitation, temperature, radiation, etc.)
+	•	Static land surface properties, including soil type, vegetation type (MODIS), and land cover
 
-   Thus, the network predicts a set of parameters for each basin.
-   Hydrologic Model (MCP)
-   The predicted parameters will be used within a Mass-Conserving Perceptron (MCP) rainfall–runoff model. Two variants of the MCP model will be evaluated:
-   •    M5 with ponding
-   •    M5 with ponding and vertical drainage
-   For each basin, the MCP model will simulate streamflow using meteorological forcing. The difference between simulated and observed streamflow will be used to compute the training loss.
+Outputs:
+	•	Grid-scale runoff components (surface and subsurface)
+	•	Hydrologic state variables (soil moisture, SWE)
+	•	Energy fluxes (optional for diagnostics)
 
-I  nductive Training Strategy
+Special attention will be given to:
+	•	Maintaining numerical consistency with the original Fortran model
+	•	Ensuring mass conservation across all fluxes
+	•	Designing the implementation to be GPU-efficient, avoiding excessive memory usage despite the model’s complexity
 
-   To evaluate generalization, an inductive learning setup will be used. Catchments will be divided into training, validation, and testing groups. The GNN will be trained only using the training basins, while validation and test basins will remain unseen during training. This allows evaluation of the model’s ability to estimate parameters for new catchments.
+⸻
+
+#### (2) Graph Neural Network (GNN) Routing
+
+A graph neural network (GNN) will be used to route runoff through the river network in a physically informed way.
+	•	Each grid cell (or aggregated subcatchment) is represented as a node
+	•	Graph connectivity is defined using DEM-derived flow directions, ensuring consistency with real topographic flow paths
+	•	Edges represent downstream connectivity and flow accumulation pathways
+
+Node features include:
+	•	Runoff generated by Noah-MP (time-varying)
+	•	Static attributes such as elevation, slope, and upstream contributing area
+
+The GNN will learn how water propagates through the network by:
+	•	Aggregating upstream contributions
+	•	Learning nonlinear flow transformations and delays
+	•	Capturing spatial dependencies that are difficult to represent in traditional routing models
+
+This approach provides a flexible alternative to conventional routing schemes (e.g., kinematic wave or linear reservoirs).
+
+⸻
+
+#### (3) End-to-End Training
+
+The full system will be trained end-to-end, linking physical simulation and learned routing:
+	1.	Noah-MP generates grid-scale runoff
+	2.	The GNN routes runoff through the river network
+	3.	Predicted streamflow at gauge locations is compared with observed USGS discharge
+
+Loss function:
+	•	Primary: Mean Squared Error (MSE)
+	•	Optional: hydrologically meaningful losses (e.g., NSE-based or log-transformed loss to emphasize low flows)
+
+This setup allows gradients to propagate through:
+	•	The GNN routing model
+	•	Potentially selected components or parameters of Noah-MP
+
+Training will be conducted over a multi-year period, with careful handling of long sequences to ensure computational feasibility.
 
 ### 4. Expected outcomes and evaluation
 
-   What do you expect to find? How will you know if your method worked? Describe at least one concrete evaluation metric or diagnostic plot you plan to produce.
+The expected outcome is a hybrid physics–machine learning framework that improves streamflow prediction while maintaining physically interpretable internal states.
 
-   The primary outcome will be a trained model capable of predicting hydrologic parameters for unseen basins and generating streamflow simulations using the MCP model.
+Model performance will be evaluated using standard hydrologic metrics:
+	•	Kling–Gupta Efficiency (KGE)
+	•	Nash–Sutcliffe Efficiency (NSE)
+	•	RMSE and bias
 
-   Model performance will be evaluated using standard hydrologic metrics, including:
-      •	Kling–Gupta Efficiency (KGE)
-      •	Nash–Sutcliffe Efficiency (NSE)
+Diagnostic analyses will include:
+	•	Observed vs simulated hydrographs at selected gauges
+	•	Flow duration curves to assess distributional behavior
+	•	Seasonal performance analysis (e.g., winter snowmelt vs summer monsoon)
+	•	Spatial comparison of performance across multiple gauges
 
-   These metrics will be computed for both validation and test basins.
-
-   In addition to summary metrics, several diagnostic plots will be produced:
-      •	Observed vs simulated hydrographs for selected basins
-      •	Flow duration curves comparing observed and simulated streamflow
-      •	Spatial maps showing model performance across basins
-
-   Comparisons between the two MCP model structures (with and without drainage) will help assess how additional physical processes influence predictive performance.
-
-   Overall, the project will demonstrate whether graph-based parameter regionalization combined with a physics-based hydrologic model can improve rainfall–runoff prediction in previously unseen catchments.
+In addition, the study will evaluate:
+	•	Whether GNN-based routing improves streamflow prediction compared to simpler routing approaches
+	•	Whether the differentiable Noah-MP framework enables improved calibration of hydrologic processes
+	•	Whether internal states (e.g., soil moisture, SWE) remain physically realistic while optimizing streamflow
 
 ## Submission Instructions
 
